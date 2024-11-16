@@ -30,7 +30,7 @@ python preprocess_voxCeleb.py --root_path ./VoxCeleb1_test --metadata_path ./vox
 
 REF_FPS = 25 		# fps to extract frames
 REF_SIZE = 360 		# Height
-LOW_RES_SIZE = 400 	
+LOW_RES_SIZE = 400
 
 
 parser = ArgumentParser()
@@ -43,18 +43,17 @@ parser.set_defaults(delete_videos=False)
 parser.add_argument("--delete_or_frames", dest='delete_or_frames', action='store_true', help="Delete original frames and keep only the cropped frames")
 parser.set_defaults(delete_or_frames=False)
 
-	
-def get_frames(video_path, frames_path, video_index, fps):
+
+def get_frames(video_path, frames_path, video_index):
 	cap = cv2.VideoCapture(video_path)
 	counter = 0
 	# a variable to set how many frames you want to skip
-	frame_skip = fps
 	while cap.isOpened():
-		ret, frame = cap.read()	
+		ret, frame = cap.read()
 		if not ret:
-			break		
-		if counter % frame_skip == 0:
-			cv2.imwrite(os.path.join(frames_path, '{:02d}_{:06d}.png'.format(video_index, counter)), frame)
+			break
+    
+		cv2.imwrite(os.path.join(frames_path, '{:02d}_{:06d}.png'.format(video_index, counter)), frame)
 		counter += 1
 
 	cap.release()
@@ -62,15 +61,16 @@ def get_frames(video_path, frames_path, video_index, fps):
 
 
 def extract_frames_opencv(videos_tmp, fps, frames_path):
-	
+
 	print('1. Extract frames')
 	make_path(frames_path)
 	for i in tqdm(range(len(videos_tmp))):
-		get_frames(videos_tmp[i], frames_path, i, fps)
-	
+		get_frames(videos_tmp[i], frames_path, i)
+
 
 def preprocess_frames(dataset, output_path_video, frames_path, image_files, save_dir, txt_metadata, landmark_est = None):
-	
+	landmark_est = None
+	target_size = (448, 448)
 	if dataset == 'vox2':
 		image_ref = read_image_opencv(image_files[0])
 		mult = image_ref.shape[0] / REF_SIZE
@@ -79,7 +79,7 @@ def preprocess_frames(dataset, output_path_video, frames_path, image_files, save
 		image_ref = None
 
 	info_metadata = _parse_metadata_file(txt_metadata, dataset = dataset, frame = image_ref)
-
+	# print(info_metadata)
 	errors = []
 	chunk_id = 0
 	frame_i = 0
@@ -87,7 +87,7 @@ def preprocess_frames(dataset, output_path_video, frames_path, image_files, save
 	for i in tqdm(range(len(image_files))):
 
 		# Check from which chunk video each frame is extracted.
-		# Frames are saved as chunkid_index.png 
+		# Frames are saved as chunkid_index.png
 		image_file = image_files[i]
 		image_name = image_file.split('/')[-1]
 		image_chunk_id = image_name.split('.')[0]
@@ -101,15 +101,17 @@ def preprocess_frames(dataset, output_path_video, frames_path, image_files, save
 			frames = info_metadata[chunk_id]['frames']
 			bboxes_metadata =  info_metadata[chunk_id]['bboxes']
 			# print('Index with chunk videos every REF_FPS frames..')
-			index = frame_i+1 + frame_i*(REF_FPS-1)
+			index = frame_i #+ frame_i*(REF_FPS-1)
+
 			if index < len(bboxes_metadata):
+				# print("\nfps\n", index)
 				bbox = bboxes_metadata[index]
-				frame = frames[index]				
-		
+				frame = frames[index]
+
 		if bbox is not None:
 			image = read_image_opencv(image_file)
 			frame = image.copy()
-			(h, w) = image.shape[:2]	
+			(h, w) = image.shape[:2]
 
 			scale_res = REF_SIZE / float(h)
 			bbox_new = bbox.copy()
@@ -117,13 +119,16 @@ def preprocess_frames(dataset, output_path_video, frames_path, image_files, save
 			bbox_new[1] = bbox_new[1] / scale_res
 			bbox_new[2] = bbox_new[2] / scale_res
 			bbox_new[3] = bbox_new[3] / scale_res
-			
-			cropped_image, bbox_scaled = crop_box(frame, bbox_new, scale_crop = 2.0)
+
+			cropped_image, bbox_scaled = crop_box(frame, bbox_new, scale_crop = 1.0)
 			filename = os.path.join(save_dir, image_name)
+			# print(cropped_image.shape)
+			cropped_image = cv2.resize(cropped_image, target_size)
+			# print(cropped_image.shape)
 			cv2.imwrite(filename,  cv2.cvtColor(cropped_image.copy(), cv2.COLOR_RGB2BGR))
 			h, w, _ = cropped_image.shape
-			image_tensor = torch.tensor(np.transpose(cropped_image, (2,0,1))).float().cuda()
-			
+			# image_tensor = torch.tensor(np.transpose(cropped_image, (2,0,1))).float().cuda()
+
 			if landmark_est is not None:
 				with torch.no_grad():
 					landmarks = landmark_est.detect_landmarks( image_tensor.unsqueeze(0))
@@ -136,10 +141,57 @@ def preprocess_frames(dataset, output_path_video, frames_path, image_files, save
 							filename = os.path.join(save_dir, image_name)
 							cv2.imwrite(filename,  cv2.cvtColor(img.copy(), cv2.COLOR_RGB2BGR))
 		frame_i += 1
+	parent_dir = os.path.dirname(save_dir)
+	print(parent_dir)
+	mp4_files = glob.glob(os.path.join(parent_dir,"chunk_videos","*.mp4"))
+	mp4_files.sort()
+	frame_idx = 0
+	for i, mp4_file in enumerate(mp4_files):
+		mp4_dir = mp4_file
+		mp4_file = mp4_file.split("/")[-1]
+		file_name = mp4_file.split(".mp")[0]
+		mp4_file = file_name + "_cropped"+ ".mp4"
+		audio_file = os.path.join(parent_dir,"chunk_videos",file_name+".aac")
+		frames_name = f"{frame_idx:02d}_" + "%06d.png"
+		frames_dir = os.path.join(save_dir, frames_name)
+		output_file = os.path.join(parent_dir, mp4_file)
+		
+		
+		command = f"ffmpeg -y -framerate 25 -i {frames_dir} -i {audio_file} -c:v libx264 -crf 24 -preset slow -c:a aac -b:a 128k -movflags +faststart {output_file}"
+		print("X"*200, "\n", command)
+		os.system(command)
+		frame_idx += 1
+	remove_command1 = f"rm -rf {save_dir}"
+	remove_command2 = f"rm -rf {os.path.join(parent_dir, 'chunk_videos')}"
+	remove_command3 = f"rm -rf {os.path.join(parent_dir, 'frames')}"
+	os.system(remove_command1)
+	os.system(remove_command2)
+	os.system(remove_command3)
+
+	
+	
+	
+	
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 
 if __name__ == "__main__":
 
-	
+
 	args = parser.parse_args()
 	root_path = args.root_path
 	if not os.path.exists(root_path):
@@ -150,14 +202,14 @@ if __name__ == "__main__":
 	delete_or_frames = args.delete_or_frames
 	dataset = args.dataset
 
-	if not os.path.exists(metadata_path):
-		print('Please download the metadata for {} dataset'.format(dataset))
-		exit()
-	landmark_est = LandmarksEstimation(type = '2D')
+	# if not os.path.exists(metadata_path):
+	# 	print('Please download the metadata for {} dataset'.format(dataset))
+	# 	exit()
+	# landmark_est = LandmarksEstimation(type = '2D')
 
 	print('--Delete chunk videos: \t\t\t{}'.format(delete_videos))
 	print('--Delete original frames: \t\t{}'.format(delete_or_frames))
-	
+
 	ids_path = glob.glob(os.path.join(root_path, '*/'))
 	ids_path.sort()
 	print('Dataset has {} identities'.format(len(ids_path)))
@@ -182,24 +234,24 @@ if __name__ == "__main__":
 			if not os.path.exists(output_path_chunk_videos):
 				print('path {} does not exist.'.format(output_path_chunk_videos))
 			else:
-				
+
 				txt_metadata = glob.glob(os.path.join(metadata_path, id_index, video_id, '*.txt'))
 				txt_metadata.sort()
-				
+
 				############################################################
 				###                   Frame extraction 					 ###
 				############################################################
 				videos_tmp = glob.glob(os.path.join(output_path_chunk_videos, '*.mp4'))
 				videos_tmp.sort()
 				extracted_frames_path = os.path.join(output_path_video, 'frames')
-				if len(videos_tmp) > 0:					
+				if len(videos_tmp) > 0:
 					extract_frames_opencv(videos_tmp, REF_FPS, extracted_frames_path)
 				else:
 					print('No videos in {}'.format(output_path_video))
 					count += 1
 					continue
-				
-				
+
+
 				############################################################
 				###                   Preprocessing 					 ###
 				############################################################
@@ -219,7 +271,7 @@ if __name__ == "__main__":
 				# Delete original frames
 				if delete_or_frames:
 					command_delete = 'rm -rf {}'.format(os.path.join(output_path_video, frames_folder_name))
-					os.system(command_delete)	
+					os.system(command_delete)
 				################################################
 			count += 1
 		print('*********************************************************')
