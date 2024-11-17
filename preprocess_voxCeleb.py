@@ -83,8 +83,9 @@ def preprocess_frames(dataset, output_path_video, frames_path, image_files, save
 	errors = []
 	chunk_id = 0
 	frame_i = 0
-	print('2. Preprocess frames')
-	for i in tqdm(range(len(image_files))):
+	print(f'2. Preprocess frames num_frames={len(image_files)}')
+	
+	for i in range(len(image_files)):
 
 		# Check from which chunk video each frame is extracted.
 		# Frames are saved as chunkid_index.png
@@ -157,13 +158,13 @@ def preprocess_frames(dataset, output_path_video, frames_path, image_files, save
 		output_file = os.path.join(parent_dir, mp4_file)
 		
 		
-		command = f"ffmpeg -y -framerate 25 -i {frames_dir} -i {audio_file} -c:v libx264 -crf 24 -preset slow -c:a aac -b:a 128k -movflags +faststart {output_file}"
+		command = f"ffmpeg -y -thread_queue_size 1024 -framerate 25 -i {frames_dir} -thread_queue_size 1024 -i {audio_file} -c:v libx264 -crf 28 -preset faster -c:a aac -b:a 128k -movflags +faststart {output_file}"
 		print("X"*200, "\n", command)
 		os.system(command)
 		frame_idx += 1
-	remove_command1 = f"rm -rf {save_dir}"
-	remove_command2 = f"rm -rf {os.path.join(parent_dir, 'chunk_videos')}"
-	remove_command3 = f"rm -rf {os.path.join(parent_dir, 'frames')}"
+	remove_command1 = f"rm -rf {save_dir} "
+	remove_command2 = f"rm -rf {os.path.join(parent_dir, 'chunk_videos')} "
+	remove_command3 = f"rm -rf {os.path.join(parent_dir, 'frames')} "
 	os.system(remove_command1)
 	os.system(remove_command2)
 	os.system(remove_command3)
