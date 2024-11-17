@@ -44,10 +44,10 @@ python download_voxCeleb.py --output_path ./VoxCeleb1_test --metadata_path ./txt
 """
 
 DEVNULL = open(os.devnull, 'wb')
-LOW_LIMIT_UTTERANCE = 4
-HIGH_LIMIT_UTTERANCE = 5
+LOW_LIMIT_UTTERANCE = 10
+HIGH_LIMIT_UTTERANCE = 25
 REF_FPS = 25
-VIDEO_PER_ID = 6
+VIDEO_PER_ID = 130
 NUM_CHUNKS = 90
 
 parser = ArgumentParser()
@@ -248,7 +248,7 @@ if __name__ == "__main__":
 					os.system(command_delete)
 			else:
 				print('Error downloading video {}/{}. Deleting folder {}'.format(id_index, video_id, output_path_video))
-				command_delete = 'rm -rf {}'.format(output_path_video)
+				command_delete = 'rm -rf {} '.format(output_path_video)
 				os.system(command_delete)
 			print("vid_idx", vid_idx)
 			if vid_idx>VIDEO_PER_ID:
