@@ -57,7 +57,7 @@ def get_frames(video_path, frames_path, video_index):
 		counter += 1
 
 	cap.release()
-	cv2.destroyAllWindows()
+	# cv2.destroyAllWindows()
 
 
 def extract_frames_opencv(videos_tmp, fps, frames_path):
