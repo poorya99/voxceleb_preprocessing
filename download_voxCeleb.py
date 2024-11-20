@@ -47,7 +47,7 @@ DEVNULL = open(os.devnull, 'wb')
 LOW_LIMIT_UTTERANCE = 10
 HIGH_LIMIT_UTTERANCE = 25
 REF_FPS = 25
-VIDEO_PER_ID = 130
+VIDEO_PER_ID = 10
 NUM_CHUNKS = 3000
 
 parser = ArgumentParser()
