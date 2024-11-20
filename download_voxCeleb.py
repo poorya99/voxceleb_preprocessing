@@ -48,7 +48,7 @@ LOW_LIMIT_UTTERANCE = 10
 HIGH_LIMIT_UTTERANCE = 25
 REF_FPS = 25
 VIDEO_PER_ID = 130
-NUM_CHUNKS = 90
+NUM_CHUNKS = 600
 
 parser = ArgumentParser()
 parser.add_argument("--output_path",  required = True, help='Path to save the videos')
