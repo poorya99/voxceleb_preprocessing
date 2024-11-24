@@ -128,11 +128,11 @@ def split_in_utterances(video_id, video_path, utterance_files, chunk_folder, lim
 		tail = tail.split('.tx')[0]
 		chunk_name = os.path.join(chunk_folder, video_id + '#' + tail + '#' + str(st) + '-' + str(en) + '.mp4')
 		chunk_audio = os.path.join(chunk_folder, video_id + '#' + tail + '#' + str(st) + '-' + str(en) + '.aac')
-		command_fps = 'ffmpeg -y -i {} -qscale:v 5 -r 25 -threads 1 -ss {} -to {} -strict -2 {} -loglevel quiet'.format(video_path, first_frame, last_frame, chunk_name)
+		command_fps = 'ffmpeg -y -i {} -qscale:v 5 -r 25 -threads 1 -ss {} -to {} -strict -2 {} -hide_banner -loglevel error'.format(video_path, first_frame, last_frame, chunk_name)
 		os.system(command_fps)
 		chunk_videos.append(chunk_name)
 		# Step 1: Extract audio from the video
-		audio_extract_command = f"ffmpeg -y -i {chunk_name} -q:a 0 -map a {chunk_audio} -loglevel quiet"
+		audio_extract_command = f"ffmpeg -y -i {chunk_name} -q:a 0 -map a {chunk_audio} -hide_banner -loglevel error"
 		# print(audio_extract_command)
 		os.system(audio_extract_command)
 		if utterance_idx<limit-1:
