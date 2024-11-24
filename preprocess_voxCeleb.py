@@ -143,7 +143,7 @@ def preprocess_frames(dataset, output_path_video, frames_path, image_files, save
 							cv2.imwrite(filename,  cv2.cvtColor(img.copy(), cv2.COLOR_RGB2BGR))
 		frame_i += 1
 	parent_dir = os.path.dirname(save_dir)
-	print(parent_dir)
+	# print(parent_dir)
 	mp4_files = glob.glob(os.path.join(parent_dir,"chunk_videos","*.mp4"))
 	mp4_files.sort()
 	frame_idx = 0
@@ -159,7 +159,7 @@ def preprocess_frames(dataset, output_path_video, frames_path, image_files, save
 		
 		
 		command = f"ffmpeg -y -thread_queue_size 1024 -framerate 25 -i {frames_dir} -thread_queue_size 1024 -i {audio_file} -c:v libx264 -crf 28 -preset faster -c:a aac -b:a 128k -movflags +faststart {output_file} -hide_banner -loglevel error"
-		print("X"*200, "\n", command)
+		# print("X"*200, "\n", command)
 		os.system(command)
 		frame_idx += 1
 	remove_command1 = f"rm -rf {save_dir} "
