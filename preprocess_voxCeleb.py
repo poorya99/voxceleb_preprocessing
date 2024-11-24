@@ -158,7 +158,7 @@ def preprocess_frames(dataset, output_path_video, frames_path, image_files, save
 		output_file = os.path.join(parent_dir, mp4_file)
 		
 		
-		command = f"ffmpeg -y -thread_queue_size 1024 -framerate 25 -i {frames_dir} -thread_queue_size 1024 -i {audio_file} -c:v libx264 -crf 28 -preset faster -c:a aac -b:a 128k -movflags +faststart {output_file}"
+		command = f"ffmpeg -y -thread_queue_size 1024 -framerate 25 -i {frames_dir} -thread_queue_size 1024 -i {audio_file} -c:v libx264 -crf 28 -preset faster -c:a aac -b:a 128k -movflags +faststart {output_file} -loglevel quiet"
 		print("X"*200, "\n", command)
 		os.system(command)
 		frame_idx += 1
