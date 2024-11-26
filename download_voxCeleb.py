@@ -44,10 +44,10 @@ python download_voxCeleb.py --output_path ./VoxCeleb1_test --metadata_path ./txt
 """
 
 DEVNULL = open(os.devnull, 'wb')
-LOW_LIMIT_UTTERANCE = 10
-HIGH_LIMIT_UTTERANCE = 25
+LOW_LIMIT_UTTERANCE = 8
+HIGH_LIMIT_UTTERANCE = 20
 REF_FPS = 25
-VIDEO_PER_ID = 90
+VIDEO_PER_ID = 80
 NUM_CHUNKS = 1200
 
 parser = ArgumentParser()
